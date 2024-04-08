@@ -25,10 +25,24 @@ Green='\033[1;32m'
 
 run_all() {
 	create_build_workdir
-	create_android_aarch64
-	build_zlib_for_android
-	build_lz4_for_android
-	build_xz_for_android
+	if [ "$ZLIB_ENABLED" = "true" ]; then
+		build_zlib_for_android
+		FEATURE_ZLIB="enabled"
+	else
+		FEATURE_ZLIB="disabled"
+	fi
+	if [ "$LZ4_ENABLED" = "true" ]; then
+		build_lz4_for_android
+		FEATURE_LZ4="enabled"
+	else
+		FEATURE_LZ4="disabled"
+	fi
+	if [ "$XZ_ENABLED" = "true" ]; then
+		build_xz_for_android
+		FEATURE_XZ="enabled"
+	else
+		FEATURE_XZ="disabled"
+	fi
 	build_zstd_for_android
 }
 
@@ -43,23 +57,9 @@ create_build_workdir() {
 	unzip "$NDK_DIR"-linux.zip &>/dev/null
 	rm -rf "$NDK_DIR"-linux.zip
 
-	echo -e "${Blue}- Cloning zlib ..."
-	git clone --depth=1 https://github.com/madler/zlib.git -b "$ZLIB_BRANCH"
-
-	echo -e "${Blue}- Cloning lz4 ..."
-	git clone --depth=1 https://github.com/lz4/lz4.git -b "$LZ4_BRANCH"
-
-	echo -e "${Blue}- Cloning xz ..."
-	git clone --depth=1 https://git.tukaani.org/xz.git -b "$XZ_BRANCH"
-
-	echo -e "${Blue}- Cloning zstd ..."
-	git clone --depth=1 https://github.com/facebook/zstd.git -b "$ZSTD_BRANCH"
-
 	echo -e "${Green}- Creating output directory ..."
 	mkdir -p "$WORK_DIR"/output
-}
 
-create_android_aarch64() {
 	echo -e "${Green}- Creating android-aarch64 file ..."
 	cat <<EOF >"android-aarch64"
 [binaries]
@@ -82,11 +82,15 @@ cpu = 'armv8'
 endian = 'little'
 EOF
 
+	echo -e "${Green}- Setting PKG_CONFIG_LIBDIR ..."
 	export PKG_CONFIG_LIBDIR="$WORK_DIR"/output/lib/pkgconfig
 }
 
 build_zlib_for_android() {
 	echo -e "${Blue}- Compiling zlib for android ..."
+
+	cd "$WORK_DIR"
+	git clone --depth=1 https://github.com/madler/zlib.git -b "$ZLIB_BRANCH"
 	cd "$WORK_DIR"/zlib
 
 	CC=$NDK/aarch64-linux-android$SDK_VER-clang \
@@ -106,6 +110,9 @@ build_zlib_for_android() {
 
 build_lz4_for_android() {
 	echo -e "${Blue}- Compiling lz4 for android ..."
+
+	cd "$WORK_DIR"
+	git clone --depth=1 https://github.com/lz4/lz4.git -b "$LZ4_BRANCH"
 	cd "$WORK_DIR"/lz4/build/meson
 
 	meson setup build-android-aarch64 \
@@ -113,8 +120,7 @@ build_lz4_for_android() {
 		--buildtype=release \
 		--prefix="$WORK_DIR"/output \
 		--libdir=lib \
-		-Ddefault_library=static \
-		-Dprograms=false
+		-Ddefault_library=static
 
 	meson compile -C build-android-aarch64
 	meson install -C build-android-aarch64
@@ -122,6 +128,9 @@ build_lz4_for_android() {
 
 build_xz_for_android() {
 	echo -e "${Blue}- Compiling xz for android ..."
+
+	cd "$WORK_DIR"
+	git clone --depth=1 https://git.tukaani.org/xz.git -b "$XZ_BRANCH"
 	cd "$WORK_DIR"/xz
 
 	sudo apt-get install autopoint -y
@@ -153,6 +162,9 @@ build_xz_for_android() {
 
 build_zstd_for_android() {
 	echo -e "${Blue}- Compiling zstd for android ..."
+
+	cd "$WORK_DIR"
+	git clone --depth=1 https://github.com/facebook/zstd.git -b "$ZSTD_BRANCH"
 	cd "$WORK_DIR"/zstd/build/meson
 
 	meson setup build-android-aarch64 \
@@ -160,15 +172,14 @@ build_zstd_for_android() {
 		--prefix="$WORK_DIR"/output \
 		--libdir=lib \
 		-Ddefault_library=static \
-		-Dbin_programs=true \
-		-Dbin_contrib=true \
-		-Dmulti_thread=enabled \
-		-Dzlib="$ZLIB_ENABLED" \
-		-Dlz4="$LZ4_ENABLED" \
-		-Dlzma="$XZ_ENABLED"
+		-Dzlib="$FEATURE_ZLIB" \
+		-Dlz4="$FEATURE_LZ4" \
+		-Dlzma="$FEATURE_XZ"
 
 	meson compile -C build-android-aarch64
 	meson install -C build-android-aarch64
+
+	$NDK/llvm-strip -s -g -w "$WORK_DIR"/output/bin/zstd
 }
 
 run_all

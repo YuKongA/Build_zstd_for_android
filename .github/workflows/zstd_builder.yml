@@ -10,15 +10,18 @@ on:
       ZLIB_ENABLED:
         description: "Enabled ZLIB feature"
         required: true
-        default: 'enabled'
+        type: boolean
+        default: true
       LZ4_ENABLED:
         description: "Enabled LZ4 feature"
         required: true
-        default: 'enabled'
+        type: boolean
+        default: true
       XZ_ENABLED:
         description: "Enabled XZ feature"
         required: true
-        default: 'enabled'
+        type: boolean
+        default: true
       ZLIB_BRANCH:
         description: "ZLIB Branch"
         required: true
@@ -48,7 +51,7 @@ jobs:
 
     - name: Prepare Environment
       run: |
-        sudo apt-get remove meson firefox liblz4-dev -y
+        sudo apt-get remove firefox liblz4-dev zlib1g-dev -y
         sudo pip3 install --upgrade meson ninja
 
     - name: Execute Build Script
