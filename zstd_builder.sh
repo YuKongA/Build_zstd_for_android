@@ -114,7 +114,7 @@ build_lz4_for_android() {
 		--prefix="$WORK_DIR"/output \
 		--libdir=lib \
 		-Ddefault_library=static \
-		-Dprograms=true
+		-Dprograms=false
 
 	meson compile -C build-android-aarch64
 	meson install -C build-android-aarch64
