@@ -1,0 +1,62 @@
+name: Build ZSTD
+
+on:
+  workflow_dispatch:
+    inputs:
+      ZSTD_BRANCH:
+        description: "ZSTD Branch"
+        required: true
+        default: 'dev'
+      ZLIB_ENABLED:
+        description: "Enabled ZLIB feature"
+        required: true
+        default: 'enabled'
+      LZ4_ENABLED:
+        description: "Enabled LZ4 feature"
+        required: true
+        default: 'enabled'
+      XZ_ENABLED:
+        description: "Enabled XZ feature"
+        required: true
+        default: 'enabled'
+      ZLIB_BRANCH:
+        description: "ZLIB Branch"
+        required: true
+        default: 'develop'
+      LZ4_BRANCH:
+        description: "LZ4 Branch"
+        required: true
+        default: 'dev'
+      XZ_BRANCH:
+        description: "XZ Branch"
+        required: true
+        default: 'master'
+      NDK:
+        description: "NDK Version"
+        required: true
+        default: 'r26c'
+      SDK:
+        description: "SDK Version"
+        required: true
+        default: '34'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare Environment
+      run: |
+        sudo apt-get remove meson firefox liblz4-dev -y
+        sudo pip3 install --upgrade meson ninja
+
+    - name: Execute Build Script
+      run: bash ./zstd_builder.sh $GITHUB_ENV ${{ github.event.inputs.ZSTD_BRANCH }} ${{ github.event.inputs.ZLIB_ENABLED }} ${{ github.event.inputs.LZ4_ENABLED }} ${{ github.event.inputs.XZ_ENABLED }} ${{ github.event.inputs.ZLIB_BRANCH }} ${{ github.event.inputs.LZ4_BRANCH }} ${{ github.event.inputs.XZ_BRANCH }} ${{ github.event.inputs.NDK }} ${{ github.event.inputs.SDK }}
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ZSTD_${{ github.event.inputs.ZSTD_BRANCH }}
+        compression-level: 9
+        path: zstd_workdir/output/*
