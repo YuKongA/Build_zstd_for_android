@@ -11,17 +11,17 @@ on:
         description: "Enabled ZLIB feature"
         required: true
         type: boolean
-        default: true
+        default: false
       LZ4_ENABLED:
         description: "Enabled LZ4 feature"
         required: true
         type: boolean
-        default: true
+        default: false
       XZ_ENABLED:
         description: "Enabled XZ feature"
         required: true
         type: boolean
-        default: true
+        default: false
       ZLIB_BRANCH:
         description: "ZLIB Branch"
         required: true
